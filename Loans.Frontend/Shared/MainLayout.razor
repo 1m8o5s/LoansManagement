@@ -1,0 +1,55 @@
+﻿@inherits LayoutComponentBase
+
+@using Loans.Frontend.Authentication.Contracts
+@using Loans.Frontend.Models
+@using Loans.Frontend.Service.Contracts
+
+@inject IAuthState Auth
+@inject NavigationManager Navigation
+@inject IUserApiService UserService
+
+<Notification></Notification>
+<div class="page vw-100 vh-100">
+    <main>
+        @if (IsUserAuthorized) {
+            <div class="top-row px-4">
+               <button type="button" @onclick="LogOut" class="btn btn-link">Log Out</button>
+            </div>
+        }
+        
+        <article class="content px-4 overflow-hidden">
+            @Body
+        </article>
+    </main>
+</div>
+
+@code {
+    public bool IsUserAuthorized { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        IsUserAuthorized = await Auth.IsAuthorized();
+        Auth.OnAuthStateChanged += OnAuthStateChanged;
+    }
+
+    protected void OnAuthStateChanged(bool state)
+    {
+        IsUserAuthorized = state;
+    }
+
+    public async Task LogOut()
+    {
+        CookieValueModel token = await Auth.GetToken();
+
+        if (token.Present)
+        {
+            HttpSuccessResponseModel response = await UserService.LogOut(token.Value);
+
+            if (response.Success)
+            {
+                await Auth.LogOut();
+                Navigation.NavigateTo("/login");
+            }
+        }
+    }
+}

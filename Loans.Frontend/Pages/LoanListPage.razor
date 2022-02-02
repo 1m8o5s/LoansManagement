@@ -1,0 +1,109 @@
+﻿@page "/list"
+
+@using Loans.Frontend.Authentication.Contracts
+@using Loans.Frontend.Common
+@using Loans.Frontend.Models
+@using Loans.Frontend.Service.Contracts
+@using Microsoft.AspNetCore.SignalR.Client;
+
+@inject HttpClient HttpClient
+@inject NavigationManager Navigation
+@inject ILoanApiService LoanApiService
+@inject IJSRuntime JSRuntime
+@inject IAuthState Auth
+
+<h4>List of calculated loans</h4>
+
+
+<button class="btn btn-primary mb-4" @onclick="GoToMainMenu">Main menu</button>
+
+<div style="overflow-y:auto;max-height:81vh;">
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th scope="col">Customer</th>
+                <th scope="col">Sum</th>
+                <th scope="col">Type</th>
+                <th scope="col">Interest</th>
+                <th scope="col">Term</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (LoanListModel item in ListOfLoans)
+            {
+                <tr>
+                    <th scope="row">@item.Customer</th>
+                    <td>@item.LoanSum.ToString("F2")</td>
+                    <td>@item.Type</td>
+                    <td>@item.Interest.ToString("F2")</td>
+                    <td>@item.Term</td>
+                    <td><a href="info/@item.Id">View</a></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    public List<LoanListModel> ListOfLoans { get; set; } = new List<LoanListModel>();
+
+    public string Received { get; set; } = "Not Received";
+
+    private HubConnection _connection;
+
+    protected async Task GoToMainMenu()
+    {
+        if (_connection != null)
+        {
+            await _connection.StopAsync();
+        }
+
+        Navigation.NavigateTo("/");
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!(await Auth.IsAuthorized()))
+        {
+            Navigation.NavigateTo("/login");
+        }
+
+        _connection = new HubConnectionBuilder()
+            .WithUrl(ApiEndpoints.FUNCTIONS_URL)
+            .WithAutomaticReconnect()
+            .Build();
+
+        _connection.On("loan", (LoanListModel loan) =>
+        {
+            if (loan != null && ListOfLoans != null)
+            {
+                if (ListOfLoans.Any(loanListModel => loanListModel.Id.Equals(loan.Id)))
+                {
+                    LoanListModel loanToChange = ListOfLoans.First(loanListModel => loanListModel.Id.Equals(loan.Id));
+
+                    int loanToChangeIndex = ListOfLoans.IndexOf(loanToChange);
+
+                    ListOfLoans[loanToChangeIndex] = loan;
+                }
+                else
+                {
+                    ListOfLoans.Add(loan);
+                }
+            }
+
+            StateHasChanged();
+        });
+
+        HttpSuccessResponseModel response = await LoanApiService.GetLoansList((await Auth.GetToken()).Value);
+
+        if (response.Success)
+        {
+            ListOfLoans = (List<LoanListModel>)response.HttpResponseModel.Data;
+
+            StateHasChanged();
+        }
+
+        await _connection.StartAsync();
+    }
+}

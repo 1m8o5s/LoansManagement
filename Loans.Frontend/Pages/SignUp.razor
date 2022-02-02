@@ -1,0 +1,49 @@
+﻿@page "/signup"
+
+@using Loans.Frontend.Authentication.Contracts
+@using Loans.Frontend.Models
+@using Loans.Frontend.Service.Contracts
+
+@inject IAuthState Auth
+@inject INotificationService NotificationService
+@inject NavigationManager NavigationManager
+@inject IUserApiService UserService
+
+<div class="position-absolute top-50 start-50 translate-middle shadow p-3 bg-white rounded-2">
+    <h3 class="mb-5">SignUp</h3>
+
+    <EditForm Model="UserToLogin" OnValidSubmit="OnSignUp">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+        <div class="form-outline mb-4">
+            <label for="name">
+                Name
+            </label>
+            <InputText id="name" class="form-control" @bind-Value="UserToLogin.Name" />
+        </div>
+
+        <div class="form-outline mb-4">
+            <label for="password">
+                Password
+            </label>
+            <InputText id="password" type="password" class="form-control" @bind-Value="UserToLogin.Password" />
+        </div>
+
+        <button type="submit" onsubmit="OnSignUp" class="btn btn-primary">Sign Up</button>
+        <a href="/login" class="btn btn-link">Log In</a>
+    </EditForm>
+</div>
+
+@code {
+    public UserAuthenticateModel UserToLogin { get; set; } = new UserAuthenticateModel();
+
+    public async Task OnSignUp()
+    {
+        HttpSuccessResponseModel response = await UserService.SignUp(UserToLogin);
+
+        if (response.Success)
+        {
+            NavigationManager.NavigateTo("/login");
+        }
+    }
+}

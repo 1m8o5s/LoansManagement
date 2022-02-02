@@ -1,0 +1,21 @@
+﻿@page "/"
+
+@using Loans.Frontend.Authentication.Contracts
+
+@inject IAuthState Auth
+@inject NavigationManager Navigation
+
+<PageTitle>Index</PageTitle>
+
+<a class="btn btn-primary mb-4" href="/add">New loan calculation</a>
+<a class="btn btn-primary mb-4" href="/list">View calculated results</a>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        if (!(await Auth.IsAuthorized()))
+        {
+            Navigation.NavigateTo("/login");
+        }
+    }
+}

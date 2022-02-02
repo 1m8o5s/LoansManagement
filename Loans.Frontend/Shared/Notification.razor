@@ -1,0 +1,44 @@
+﻿@using Loans.Frontend.Service.Contracts
+
+@inject INotificationService NotificationService
+
+<div class="notification @(IsShowing ? "notification-showing" : null) @(Success ? "bg-success": "bg-danger")">
+    <div class="notification-icon">
+        <i class="fa fa-times" aria-hidden="true"></i>
+    </div>
+    <div class="notification-body">
+        <p>@Message</p>
+    </div>
+</div>
+
+@code {
+    protected bool IsShowing { get; set; }
+    protected string Message { get; set; }
+    protected bool Success { get; set; }
+
+    protected override void OnInitialized()
+    {
+        NotificationService.OnShow += Show;
+        NotificationService.OnHide += Hide;
+    }
+
+    private void Show(string message, bool success)
+    {
+        IsShowing = true;
+        Success = success;
+        Message = message;
+        StateHasChanged();
+    }
+
+    private void Hide()
+    {
+        IsShowing = false;
+        Message = string.Empty;
+        StateHasChanged();
+    }
+
+    public void Dispose() {
+        NotificationService.OnShow -= Show;
+        NotificationService.OnHide -= Hide;
+    }
+}

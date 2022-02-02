@@ -1,0 +1,55 @@
+﻿@page "/login"
+
+@using Loans.Frontend.Authentication.Contracts
+@using Loans.Frontend.Models
+@using Loans.Frontend.Service.Contracts
+@using Microsoft.AspNetCore.Components.Forms;
+@using System.Diagnostics
+
+@inject IUserApiService UserService
+@inject INotificationService NotificationService
+@inject IUserApiService UserApiService
+@inject NavigationManager Navigation
+@inject IAuthState Auth
+
+
+<div class="position-absolute top-50 start-50 translate-middle shadow p-3 bg-white rounded-2">
+    <h3 class="mb-5">Log in</h3>
+
+    <EditForm Model="UserToLogin" OnValidSubmit="OnLogIn">
+        <DataAnnotationsValidator />  
+        <ValidationSummary /> 
+        <div class="form-outline mb-4">
+            <label for="name" class="form-label">
+                Name
+            </label>
+            <InputText id="name" type="text" class="form-control" @bind-Value="UserToLogin.Name" />
+        </div>
+
+        <div class="form-outline mb-4">
+            <label for="password" class="form-label">
+                Password
+            </label>
+            <InputText id="password" type="password" class="form-control" @bind-Value="UserToLogin.Password" />
+        </div>
+
+        <button type="submit" onsubmit="OnLogIn" class="btn btn-primary btn-block">Log in</button>
+        <a href="/signup" class="btn btn-link">Sign up</a>
+    </EditForm>
+</div>
+
+@code {
+    public UserAuthenticateModel UserToLogin { get; set; } = new UserAuthenticateModel();
+
+    public async Task OnLogIn()
+    {
+        HttpSuccessResponseModel response = await UserService.Authenticate(UserToLogin);
+
+        if (response.Success)
+        {
+            await Auth.LogIn((TokenWithExpireDateModel)response.HttpResponseModel.Data);
+
+            Navigation.NavigateTo("/");
+        }
+    }
+}

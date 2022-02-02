@@ -1,0 +1,87 @@
+﻿@page "/add"
+
+@using Loans.Frontend.Authentication.Contracts
+@using Loans.Frontend.Models
+@using Loans.Frontend.Common
+@using Loans.Frontend.Common.Contracts
+@using Loans.Frontend.Service.Contracts
+
+@inject IEnumHelperFactory EnumHelperFactory
+@inject HttpClient HttpClient
+@inject NavigationManager Navigation
+@inject ILoanApiService LoanApiService
+@inject IUserApiService UserApiService
+@inject IJSRuntime JSRuntime
+@inject IAuthState Auth
+
+<PageTitle>Add loan</PageTitle>
+<div class="position-absolute top-50 start-50 translate-middle shadow p-3 bg-white rounded-2 vh-25" style="width:calc(100px + 25vw)">
+    <EditForm Model="LoanToAdd" OnValidSubmit="OnValidSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+        <div class="form-outline mb-4">
+            <label for="customer">
+                Customer
+            </label>
+            <InputText id="customer" class="form-control" @bind-Value="LoanToAdd.Customer" />
+        </div>
+
+        <div class="form-outline mb-4">
+            <label for="loanSum">
+                Loan Sum
+            </label>
+            <InputNumber id="loanSum" class="form-control" @bind-Value="LoanToAdd.LoanSum" />
+        </div>
+
+        <div class="form-outline mb-4">
+            <label for="type">
+                Type
+            </label>
+            <InputSelect id="type" class="form-control" @bind-Value="LoanToAdd.Type">
+                @foreach (CalculationType calculationType in EnumHelperFactory.NewEnumHelper<CalculationType>().GetEnumValues())
+                {
+                    <option value="@calculationType">@calculationType.ToString()</option>
+                }
+            </InputSelect>
+        </div>
+
+        <div class="form-outline mb-4">
+            <label for="interest">
+                Interest
+            </label>
+            <InputNumber id="interest" class="form-control" @bind-Value="LoanToAdd.Interest" />
+        </div>
+
+        <div class="form-outline mb-4">
+            <label for="term">
+                Term in month
+            </label>
+            <InputNumber id="term" class="form-control" @bind-Value="LoanToAdd.Term" />
+        </div>
+
+        <button type="submit" class="btn btn-primary mt-5">Calculate</button>
+        <a class="btn btn-primary mt-5" href="/">Main menu</a>
+    </EditForm>
+</div>
+@code {
+    public LoanAddModel LoanToAdd { get; set; } = new LoanAddModel();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!(await Auth.IsAuthorized()))
+        {
+            Navigation.NavigateTo("/login");
+        }
+    }
+
+    public async Task OnValidSubmit()
+    {
+        HttpSuccessResponseModel response = await LoanApiService.AddLoan(LoanToAdd, (await Auth.GetToken()).Value);
+
+        if (response.Success)
+        {
+            Guid id = (Guid)response.HttpResponseModel.Data;
+            Navigation.NavigateTo($"info/{id}");
+        }
+    }
+}

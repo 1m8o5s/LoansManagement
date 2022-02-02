@@ -1,0 +1,122 @@
+﻿@page "/info/{id}"
+
+@using Loans.Frontend.Authentication.Contracts
+@using Loans.Frontend.Models
+@using Loans.Frontend.Service.Contracts
+
+@inject HttpClient HttpClient
+@inject ILoanApiService LoanApiService
+@inject IAuthState Auth
+@inject NavigationManager Navigation
+
+<PageTitle>Loan Details</PageTitle>
+
+<div>
+    <a class="btn btn-primary mb-4" href="/list">View loan list</a>
+    <a class="btn btn-primary mb-4" href="/">Main menu</a>
+
+    <h3>Calculation results for</h3>
+    <div class="loan-info">
+        <div class="row">
+            <label for="customer" class="col-sm-2 col-form-label">
+                Customer
+            </label>
+            <div class="col-sm-10">
+                <span>@LoanInformation.Customer</span>
+            </div>
+        </div>
+
+        <div class="row">
+            <label for="customer" class="col-sm-2 col-form-label">
+                Sum
+            </label>
+            <div class="col-sm-10">
+                <span>@LoanInformation.LoanSum</span>
+            </div>
+        </div>
+
+        <div class="row">
+            <label for="customer" class="col-sm-2 col-form-label">
+                Type
+            </label>
+            <div class="col-sm-10">
+                <span>@LoanInformation.Type</span>
+            </div>
+        </div>
+
+        <div class="row">
+            <label for="customer" class="col-sm-2 col-form-label">
+                Interest
+            </label>
+            <div class="col-sm-10">
+                <span>@LoanInformation.Interest</span>
+            </div>
+        </div>
+
+        <div class="row">
+            <label for="customer" class="col-sm-2 col-form-label">
+                Term
+            </label>
+            <div class="col-sm-10">
+                <span>@LoanInformation.Term</span>
+            </div>
+        </div>
+    </div>
+
+    <h4>Payment graph</h4>
+    <div style="overflow-y: auto; max-height: 57vh">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th scope="col">Month</th>
+                    <th scope="col">Balance</th>
+                    <th scope="col">Interest</th>
+                    <th scope="col">Payment</th>
+                    <th scope="col">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach(PaymentItem item in LoanInformation.PaymentGraph)
+                {
+                    <tr>
+                        <th scope="row">@item.Month</th>
+                        <td>@item.Balance.ToString("F2")</td>
+                        <td>@item.Interest.ToString("F2")</td>
+                        <td>@item.Payment.ToString("F2")</td>
+                        <td>@item.Total.ToString("F2")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+
+
+@code {
+    [Parameter]
+    public string? Id { get; set; }
+
+    public LoanInformationModel LoanInformation { get; set; } = new LoanInformationModel {
+            PaymentGraph = new List<PaymentItem>()
+        };
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!(await Auth.IsAuthorized()))
+        {
+            Navigation.NavigateTo("/login");
+        }
+
+        HttpSuccessResponseModel response = await LoanApiService.GetLoanInformation(Guid.Parse(Id), (await Auth.GetToken()).Value);
+
+        if (response.Success)
+        {
+            LoanInformation = (LoanInformationModel)response.HttpResponseModel.Data;
+            StateHasChanged();
+        }
+        
+        await base.OnInitializedAsync();
+    }
+    
+}
